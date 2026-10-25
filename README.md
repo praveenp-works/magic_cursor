@@ -2,6 +2,9 @@
 
 **Created by Yathin Pedamallu**
 
+
+**Watch what it does:** [Magic Cursor video](https://www.youtube.com/watch?v=YV_6v9oF0uc)
+
 Circle anything on your Windows 11 screen and ask Gemini about it, in any app, without opening a browser.
 
 **Download:** [MagicCursor.exe](https://github.com/praveenp-works/magic_cursor/releases/latest/download/MagicCursor.exe)
