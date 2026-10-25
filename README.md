@@ -4,7 +4,7 @@
 
 Circle anything on your Windows 11 screen and ask Gemini about it, in any app, without opening a browser.
 
-**Download:** [MagicCursor.exe](https://github.com/praveenpedamallu86-creator/magic_cursor/releases/latest/download/MagicCursor.exe)
+**Download:** [MagicCursor.exe](https://github.com/praveenp-works/magic_cursor/releases/latest/download/MagicCursor.exe)
 
 ## What it does
 
@@ -17,7 +17,7 @@ Circle anything on your Windows 11 screen and ask Gemini about it, in any app, w
 
 ## Install (one time, about 1 minute)
 
-1. **Download [MagicCursor.exe](https://github.com/praveenpedamallu86-creator/magic_cursor/releases/latest/download/MagicCursor.exe)** and double-click it.
+1. **Download [MagicCursor.exe](https://github.com/praveenp-works/magic_cursor/releases/latest/download/MagicCursor.exe)** and double-click it.
    No Python or other setup needed.
    If Windows shows **"Windows protected your PC"**, click **More info**, then **Run anyway**.
 2. The first time, it asks for your **Gemini API key**. Get one free at https://aistudio.google.com/apikey and paste it in.
