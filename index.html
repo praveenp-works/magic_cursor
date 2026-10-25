@@ -964,7 +964,7 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
     var header = doc.querySelector("header.nav[data-auto]");
     if (header) {
       header.innerHTML = '<nav class="seg" aria-label="Sections">' +
-        each(sections, function (s) { return '<a href="#' + esc(s.id) + '">' + esc(s.getAttribute("data-nav")) + "</a>"; }) + '<a href="mailto:praveenmarketing26@gmail.com?subject=Magic%20Cursor%20feedback">Give feedback</a>' + "</nav>" +
+        each(sections, function (s) { return '<a href="#' + esc(s.id) + '">' + esc(s.getAttribute("data-nav")) + "</a>"; }) + '<a href="#feedback" onclick="openFb(event)">Give feedback</a>' + "</nav>" +
         '<button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark theme"></button>';
     }
     [].slice.call(doc.querySelectorAll(".foot nav[data-auto]")).forEach(function (n) {
@@ -1084,5 +1084,23 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
         });
       });
     </script>
-  <script>(function(){try{var b="https://abacus.jasoncameron.dev/hit/praveenp-magic-cursor/";fetch(b+"visits",{mode:"cors"}).catch(function(){});if(!localStorage.getItem("mc_seen")){localStorage.setItem("mc_seen","1");fetch(b+"visitors",{mode:"cors"}).catch(function(){});}}catch(e){}})();</script></body>
+  <script>(function(){try{var b="https://abacus.jasoncameron.dev/hit/praveenp-magic-cursor/";fetch(b+"visits",{mode:"cors"}).catch(function(){});if(!localStorage.getItem("mc_seen")){localStorage.setItem("mc_seen","1");fetch(b+"visitors",{mode:"cors"}).catch(function(){});}}catch(e){}})();</script><div id="fb" style="display:none;position:fixed;inset:0;z-index:9999;background:#0008;align-items:center;justify-content:center;padding:16px;font-family:inherit">
+<form id="fbf" style="background:#fff;color:#1d1d1f;width:100%;max-width:440px;border-radius:24px;padding:24px;box-shadow:0 10px 50px #0005">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:20px">Give feedback</b><button type="button" onclick="closeFb()" aria-label="Close" style="border:0;background:none;font-size:24px;cursor:pointer;color:#555">&times;</button></div>
+<input name="name" placeholder="Your name (optional)" style="width:100%;box-sizing:border-box;padding:12px;margin-bottom:10px;border:1px solid #ccc;border-radius:12px;font:inherit">
+<input name="email" type="email" placeholder="Your email (optional, for a reply)" style="width:100%;box-sizing:border-box;padding:12px;margin-bottom:10px;border:1px solid #ccc;border-radius:12px;font:inherit">
+<textarea name="message" required rows="5" placeholder="What do you think? What should be better?" style="width:100%;box-sizing:border-box;padding:12px;margin-bottom:12px;border:1px solid #ccc;border-radius:12px;font:inherit;resize:vertical"></textarea>
+<button id="fbs" type="submit" style="width:100%;padding:12px;border:0;border-radius:999px;background:#1a73e8;color:#fff;font:inherit;font-weight:600;cursor:pointer">Send feedback</button>
+<p id="fbm" style="margin:10px 0 0;text-align:center;font-size:14px"></p>
+</form></div>
+<script>
+function openFb(e){if(e)e.preventDefault();var f=document.getElementById("fb");f.style.display="flex";document.getElementById("fbm").textContent="";}
+function closeFb(){document.getElementById("fb").style.display="none";}
+document.getElementById("fb").addEventListener("click",function(e){if(e.target.id==="fb")closeFb();});
+document.getElementById("fbf").addEventListener("submit",function(e){e.preventDefault();var f=e.target,m=document.getElementById("fbm"),b=document.getElementById("fbs");
+var d={name:f.name.value,email:f.email.value,message:f.message.value,_subject:"Magic Cursor feedback",_template:"table",_captcha:"false"};
+b.disabled=true;b.textContent="Sending...";
+fetch("https://formsubmit.co/ajax/praveenmarketing26@gmail.com",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(d)}).then(function(r){return r.json();}).then(function(){m.style.color="#188038";m.textContent="Thanks! Your feedback was sent.";f.reset();setTimeout(closeFb,1800);}).catch(function(){m.style.color="#d93025";m.textContent="Couldn't send. Please try again.";}).then(function(){b.disabled=false;b.textContent="Send feedback";});});
+</script>
+</body>
 </html>
