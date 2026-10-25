@@ -1,0 +1,47 @@
+name: Build MagicCursor.exe
+on:
+  workflow_dispatch:
+    inputs:
+      p1:
+        description: part 1
+        required: true
+      p2:
+        description: part 2
+        required: false
+        default: ""
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unpack
+        shell: python
+        env:
+          P1: ${{ inputs.p1 }}
+          P2: ${{ inputs.p2 }}
+        run: |
+          import os, base64, lzma, re
+          src = lzma.decompress(base64.b64decode(os.environ["P1"] + os.environ["P2"]))
+          open("magic_cursor.pyw", "wb").write(src)
+          v = re.search(rb"^VERSION\s*=\s*(\d+)", src, re.M).group(1).decode()
+          open(os.environ["GITHUB_ENV"], "a").write("V=" + v + "\n")
+          print("version", v)
+      - name: Install tools
+        run: python -m pip install -U pyinstaller google-genai mss pillow keyboard vosk sounddevice
+      - name: Build exe
+        run: python -m PyInstaller --onefile --noconsole --name MagicCursor --icon MagicCursor.ico --collect-all vosk --collect-all sounddevice --collect-all _sounddevice_data magic_cursor.pyw
+      - name: Remove source
+        shell: bash
+        run: rm -f magic_cursor.pyw MagicCursor.spec; rm -rf build
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "v$V" --yes --cleanup-tag || true
+          gh release create "v$V" dist/MagicCursor.exe --title "Magic Cursor v$V" --notes "Magic Cursor for Windows 11, version $V. Created by Yathin Pedamallu."
