@@ -1,4 +1,4 @@
-# Magic Pointer for Windows 11
+# Magic Cursor for Windows 11
 
 **Created by Yathin Pedamallu**
 
@@ -29,7 +29,7 @@ Circle anything on your Windows 11 screen and ask Gemini about it, in any app, w
 - Click the small round Gemini button at the top right of your screen.
 - Press **Ctrl + Shift + Space**.
 - Shake your mouse back and forth **6 times quickly**.
-- Say **"Hey Cursor"** or **"Magic Pointer"**.
+- Say **"Hey Cursor"** or **"Magic Cursor"**.
 
 Then drag a box around anything and type your question.
 
@@ -43,6 +43,6 @@ Then drag a box around anything and type your question.
 
 ---
 
-Created by **Yathin Pedamallu**. Magic Pointer is an independent project and is not made by Google or Microsoft.
+Created by **Yathin Pedamallu**. Magic Cursor is an independent project and is not made by Google or Microsoft.
 
 Contact: praveenmarketing26@gmail.com
