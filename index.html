@@ -964,7 +964,7 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
     var header = doc.querySelector("header.nav[data-auto]");
     if (header) {
       header.innerHTML = '<nav class="seg" aria-label="Sections">' +
-        each(sections, function (s) { return '<a href="#' + esc(s.id) + '">' + esc(s.getAttribute("data-nav")) + "</a>"; }) + "</nav>" +
+        each(sections, function (s) { return '<a href="#' + esc(s.id) + '">' + esc(s.getAttribute("data-nav")) + "</a>"; }) + '<a href="mailto:praveenmarketing26@gmail.com?subject=Magic%20Cursor%20feedback">Give feedback</a>' + "</nav>" +
         '<button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark theme"></button>';
     }
     [].slice.call(doc.querySelectorAll(".foot nav[data-auto]")).forEach(function (n) {
