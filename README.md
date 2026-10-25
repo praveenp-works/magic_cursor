@@ -44,3 +44,5 @@ Then drag a box around anything and type your question.
 ---
 
 Created by **Yathin Pedamallu**. Magic Pointer is an independent project and is not made by Google or Microsoft.
+
+Contact: praveenmarketing26@gmail.com
