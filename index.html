@@ -896,7 +896,7 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
       </main>
       <footer class="foot">
         <p><strong>Created by Yathin Pedamallu.</strong> Magic Cursor is an independent project and is not made by Google or Microsoft. Created October 25, 2026. <a class="link" href="https://github.com/praveenp-works/magic_cursor" target="_blank" rel="noopener">GitHub repo</a></p>
-        <p>Contact: <a class="link" href="mailto:praveenmarketing26@gmail.com">praveenmarketing26@gmail.com</a></p>
+        <p>Contact: <a class="link" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=praveenmarketing26@gmail.com&amp;su=Magic%20Cursor%20feedback" target="_blank" rel="noopener">praveenmarketing26@gmail.com</a></p>
         <nav aria-label="Back to sections" data-auto></nav>
       </footer>
     </div>
@@ -964,7 +964,7 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
     var header = doc.querySelector("header.nav[data-auto]");
     if (header) {
       header.innerHTML = '<nav class="seg" aria-label="Sections">' +
-        each(sections, function (s) { return '<a href="#' + esc(s.id) + '">' + esc(s.getAttribute("data-nav")) + "</a>"; }) + '<a href="#feedback" onclick="openFb(event)">Give feedback</a>' + "</nav>" +
+        each(sections, function (s) { return '<a href="#' + esc(s.id) + '">' + esc(s.getAttribute("data-nav")) + "</a>"; }) + '<a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=praveenmarketing26@gmail.com&amp;su=Magic%20Cursor%20feedback" target="_blank" rel="noopener">Give feedback</a>' + "</nav>" +
         '<button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark theme"></button>';
     }
     [].slice.call(doc.querySelectorAll(".foot nav[data-auto]")).forEach(function (n) {
