@@ -1100,7 +1100,7 @@ document.getElementById("fb").addEventListener("click",function(e){if(e.target.i
 document.getElementById("fbf").addEventListener("submit",function(e){e.preventDefault();var f=e.target,m=document.getElementById("fbm"),b=document.getElementById("fbs");
 var d={name:f.name.value,email:f.email.value,message:f.message.value,_subject:"Magic Cursor feedback",_template:"table",_captcha:"false"};
 b.disabled=true;b.textContent="Sending...";
-fetch("https://formsubmit.co/ajax/praveenmarketing26@gmail.com",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(d)}).then(function(r){return r.json();}).then(function(){m.style.color="#188038";m.textContent="Thanks! Your feedback was sent.";f.reset();setTimeout(closeFb,1800);}).catch(function(){m.style.color="#d93025";m.textContent="Couldn't send. Please try again.";}).then(function(){b.disabled=false;b.textContent="Send feedback";});});
+fetch("https://formsubmit.co/ajax/praveenmarketing26@gmail.com",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(d)}).then(function(r){return r.json();}).then(function(j){if(!j||String(j.success)!=="true")throw 0;m.style.color="#188038";m.textContent="Thanks! Your feedback was sent.";f.reset();setTimeout(closeFb,1800);}).catch(function(){m.style.color="#d93025";m.textContent="Couldn't send right now. Please email praveenmarketing26@gmail.com";}).then(function(){b.disabled=false;b.textContent="Send feedback";});});
 </script>
 </body>
 </html>
