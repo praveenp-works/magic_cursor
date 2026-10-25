@@ -6,6 +6,8 @@ Circle anything on your Windows 11 screen and ask Gemini about it, in any app, w
 
 **Download:** [MagicCursor.exe](https://github.com/praveenp-works/magic_cursor/releases/latest/download/MagicCursor.exe)
 
+**Latest version:** v51 · Updated October 25, 2026
+
 ## What it does
 
 - **Select anything** – drag a box around any part of your screen (a chart, an error, a photo, a page) and ask about it.
