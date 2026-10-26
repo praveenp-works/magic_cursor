@@ -9,7 +9,7 @@ Circle anything on your Windows 11 screen and ask Gemini about it, in any app, w
 
 **Download:** [MagicCursor.exe](https://github.com/praveenp-works/magic_cursor/releases/latest/download/MagicCursor.exe)
 
-**Latest version:** v67 · Updated October 26, 2026
+**Latest version:** v68 · Updated October 26, 2026
 
 ## What it does
 
