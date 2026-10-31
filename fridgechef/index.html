@@ -201,6 +201,7 @@
                   <button type="button" class="x-opt" aria-pressed="false" data-v="Vegan">Vegan</button>
                   <button type="button" class="x-opt" aria-pressed="false" data-v="Gluten-free">Gluten-free</button>
                   <button type="button" class="x-opt" aria-pressed="false" data-v="Dairy-free">Dairy-free</button>
+                  <button type="button" class="x-opt" aria-pressed="false" data-v="Lactose-free">Lactose-free</button>
                 </div>
               </div>
               <div class="x-field">
@@ -355,6 +356,16 @@
           g.addEventListener("click", (e) => {
             const b = e.target.closest(".x-opt");
             if (!b) return;
+            if (g.dataset.opt === "diet") {
+              // Multi-select: Any clears the rest; any other diet clears Any; none left falls back to Any
+              const any = g.querySelector('[data-v="Any"]');
+              if (b === any) g.querySelectorAll(".x-opt").forEach((x) => x.setAttribute("aria-pressed", x === any));
+              else {
+                b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
+                any.setAttribute("aria-pressed", !g.querySelector('.x-opt:not([data-v="Any"])[aria-pressed="true"]'));
+              }
+              return;
+            }
             g.querySelectorAll(".x-opt").forEach((x) => x.setAttribute("aria-pressed", x === b));
             if (g.dataset.opt === "time") { $("timeOther").hidden = b.dataset.v !== "Other"; if (b.dataset.v === "Other") $("timeH").focus(); }
           })
@@ -397,16 +408,80 @@
         ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("is-over")));
         drop.addEventListener("drop", (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
 
+        // Diets (any combination)
+        const diets = () => [...document.querySelectorAll('[data-opt="diet"] [aria-pressed="true"]')].map((b) => b.dataset.v).filter((v) => v !== "Any");
+        const LF_RULE = "Every recipe must be lactose-free: no lactose. Lactose-free milk, hard aged cheeses (such as cheddar or parmesan) and butter in small amounts are OK. Where a dish usually uses milk, cream, soft cheese or yogurt, suggest a lactose-free swap (e.g. lactose-free milk or yogurt) and name it in the steps.";
+        function dietRule(subject) {
+          const d = diets();
+          if (!d.length) return "";
+          const other = d.filter((x) => x !== "Lactose-free");
+          return [
+            other.length ? `${subject} must be ${other.join(" and ")}.` : "",
+            d.includes("Lactose-free") ? LF_RULE.replace("Every recipe", subject) : "",
+            d.length > 1 ? `${subject} must meet all of these diets at once (${d.join(", ")}). Where their rules conflict, follow the stricter one, and swap any ingredient that breaks one of them for one that fits all of them, naming the swap in the steps.` : "",
+          ].filter(Boolean).join(" ");
+        }
+        const lc = (s) => s.toLowerCase();
+        const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+        const keepCase = (m, out) => (/^[A-Z]/.test(m) ? cap(out) : out);
+        const MEAT = /\b(chicken|beef|pork|bacon|ham|sausages?|salami|pepperoni|chorizo|turkey|lamb|mince|steak|fish|tuna|salmon|cod|prawns?|shrimps?|anchov(y|ies)|gelatine?)\b/i;
+        const VEG_OK = /\b(plant[- ]based|vegan|veggie|vegetarian|meat[- ]free|meatless)\b/i;
+        const CHEESE = "cheese|cheddar|mozzarella|parmesan|ricotta|brie|camembert|feta|cottage|mascarpone|burrata|paneer";
+        const DAIRY = new RegExp(`\\b(milk|cream|yogh?urt|butter|ghee|whey|${CHEESE})\\b`, "i");
+        const PLANT = /\b(oat|soy|soya|almond|coconut|cashew|peanut|plant|plant[- ]based|vegan|dairy[- ]free)\b/i;
+        const LACTOSE = /\b(milk|cream|yogh?urt|mozzarella|ricotta|brie|camembert|feta|cottage|mascarpone|burrata|paneer)\b/i;
+        const GLUTEN = /\b(flour|bread|toast|pasta|spaghetti|penne|macaroni|noodles|couscous|bulgur|barley|rye|seitan|soy sauce|breadcrumbs|tortillas?|wraps?|pitta|pita|bagels?|buns?|crackers|cereal|semolina|beer)\b/i;
+        const GF_OK = /gluten[- ]free|tamari|\brice (noodles|flour)|\bcorn tortillas?/i;
+        const hasLactose = (s) => LACTOSE.test(s) && !/lactose[- ]?free/i.test(s) && !PLANT.test(s);
+        const lfName = (n) => (/cheese|mozzarella|ricotta|brie|feta/i.test(n) ? "Hard aged cheese" : "Lactose-free " + lc(n));
+        const dairyName = (n) => (/butter|ghee/i.test(n) ? "Plant butter" : new RegExp(CHEESE, "i").test(n) ? "Vegan cheese" : /milk/i.test(n) ? "Oat milk" : /cream/i.test(n) ? "Oat cream" : /yogh?urt/i.test(n) ? "Coconut yogurt" : "Dairy-free " + lc(n));
+        const dairyStep = (s) => s.replace(new RegExp(`\\b(butter|ghee|milk|cream|yogh?urt|${CHEESE})\\b`, "gi"), (m) => keepCase(m, lc(dairyName(m))));
+        const meatStep = (s) => s.replace(new RegExp(MEAT.source, "gi"), (m) => keepCase(m, "plant-based " + lc(m)));
+        const DIET_ORDER = ["Vegan", "Vegetarian", "Dairy-free", "Lactose-free", "Gluten-free"];
+        const DIETS = {
+          Vegan: {
+            bad: (s) => (MEAT.test(s) && !VEG_OK.test(s)) || (DAIRY.test(s) && !PLANT.test(s)) || (/\b(eggs?|honey|mayo(nnaise)?)\b/i.test(s) && !/\bvegan\b/i.test(s)),
+            name: (n) => (MEAT.test(n) ? "Plant-based " + lc(n) : DAIRY.test(n) ? dairyName(n) : /\beggs?\b/i.test(n) ? "Firm tofu" : /honey/i.test(n) ? "Maple syrup" : "Vegan " + lc(n)),
+            steps: (s) => meatStep(dairyStep(s.replace(/\b(\d+ )?eggs?\b/gi, (m) => keepCase(m, "crumbled tofu")).replace(/\bhoney\b/gi, (m) => keepCase(m, "maple syrup")))),
+          },
+          Vegetarian: { bad: (s) => MEAT.test(s) && !VEG_OK.test(s), name: (n) => "Plant-based " + lc(n), steps: meatStep },
+          "Dairy-free": { bad: (s) => DAIRY.test(s) && !PLANT.test(s), name: dairyName, steps: dairyStep },
+          "Lactose-free": { bad: hasLactose, name: lfName, steps: (s) => s.replace(/\b(milk|cream|yogh?urt)\b/gi, "lactose-free $1") },
+          "Gluten-free": {
+            bad: (s) => GLUTEN.test(s) && !GF_OK.test(s),
+            name: (n) => (/soy sauce/i.test(n) ? "Tamari" : "Gluten-free " + lc(n)),
+            steps: (s) => s.replace(/\b(soy sauce|bread|toast|pasta|spaghetti|penne|flour|noodles)\b/gi, (m) => keepCase(m, /soy/i.test(m) ? "tamari" : "gluten-free " + lc(m))),
+          },
+        };
+        // The diets to apply: Vegan already covers Vegetarian, Dairy-free and Lactose-free; Dairy-free covers Lactose-free
+        const active = () => {
+          const d = diets();
+          return DIET_ORDER.filter((x) => d.includes(x) && !(d.includes("Vegan") && /^(Vegetarian|Dairy-free|Lactose-free)$/.test(x)) && !(x === "Lactose-free" && d.includes("Dairy-free")));
+        };
+        const fits = (s, ds) => !ds.some((d) => DIETS[d].bad(s));
+        const swapName = (n, ds) => ds.reduce((x, d) => (DIETS[d].bad(x) ? DIETS[d].name(x) : x), n);
+        const swapSteps = (steps, ds) => steps.map((s) => ds.reduce((x, d) => DIETS[d].steps(x), s));
+        const swapNote = (items, ds) => (items.length ? `${ds.join(" + ")} swap: ${items.map((b) => `${b} → ${lc(swapName(b, ds))}`).join(", ")}.` : "");
+        // A demo recipe made to fit every selected diet, or null when a diet rules out its core ingredient
+        function dietRecipe(r) {
+          const ds = active();
+          if (!ds.length) return r;
+          if (list(r.core).some((c) => !fits(c, ds))) return null;
+          const bad = list(r.uses).filter((u) => !fits(u, ds)), badMiss = list(r.missing).filter((m) => !fits(m, ds));
+          const missing = [...new Set([...list(r.missing).map((m) => swapName(m, ds)), ...bad.map((b) => swapName(b, ds))])];
+          return { ...r, uses: r.uses.filter((u) => fits(u, ds)), missing, steps: swapSteps(list(r.steps), ds), note: swapNote([...bad, ...badMiss], ds) };
+        }
+
         // Gemini
         function prompt(fromList) {
-          const time = timeLimit(), diet = opt("diet");
+          const time = timeLimit();
           return [
             fromList
               ? `These ingredients are available: ${state.ingredients.map((i) => i.name + (i.amount_guess ? ` (${i.amount_guess})` : "")).join(", ")}. Return them unchanged in "ingredients".`
               : "Look at this photo of a fridge and list every food item you can identify.",
             `Suggest exactly 3 recipes for ${state.servings} serving(s).`,
             time === null ? "" : `Each recipe must take ${time} minutes or less in total.`,
-            diet === "Any" ? "" : `Every recipe must be ${diet}.`,
+            dietRule("Every recipe"),
             $("onlyHave").checked ? "Use only the listed ingredients plus basic pantry staples (salt, pepper, oil, water); keep \"missing\" empty." : "Recipes may need a few extra items; list them in \"missing\".",
             `Category must be one of: ${CATS.join(", ")}. Difficulty is Easy, Medium or Hard.`,
             'Respond with JSON only: {"ingredients":[{"name":"","amount_guess":"","category":""}],"recipes":[{"title":"","time_minutes":0,"difficulty":"","uses":[""],"missing":[""],"steps":[""],"emoji":""}]}',
@@ -494,6 +569,7 @@
               <div class="x-emoji" aria-hidden="true">${esc(r.emoji || "🍳")}</div>
               <div><h3>${esc(r.title)}</h3></div>
               <p><span class="pill">${esc(r.time_minutes)} min</span> <span class="pill">${esc(r.difficulty || "Easy")}</span></p>
+              ${r.note ? `<p class="fineprint">${esc(r.note)}</p>` : ""}
               <div><p class="x-label">Uses</p><ul>${list(r.uses).map((u) => `<li>${esc(u)}</li>`).join("") || "<li>—</li>"}</ul></div>
               <div><p class="x-label">Missing</p>${list(r.missing).length ? `<ul class="x-miss">${r.missing.map((u) => `<li>${esc(u)}</li>`).join("")}</ul>` : '<p class="fineprint">Nothing, you have it all.</p>'}</div>
               <details><summary>Steps (${list(r.steps).length})</summary><ol>${list(r.steps).map((s) => `<li>${esc(s)}</li>`).join("")}</ol></details>
@@ -551,11 +627,11 @@
             ["Cheddar", "1 block", "Dairy"], ["Milk", "half a carton", "Dairy"], ["Butter", "1 stick", "Dairy"], ["Leftover rice", "2 cups", "Leftovers"],
           ].map(([name, amount_guess, category]) => ({ name, amount_guess, category })),
           recipes: [
-            { emoji: "🍳", title: "Spinach Cheddar Omelette", time_minutes: 15, difficulty: "Easy", uses: ["Eggs", "Spinach", "Cheddar", "Milk", "Butter"], missing: ["Chives"],
+            { emoji: "🍳", title: "Spinach Cheddar Omelette", time_minutes: 15, difficulty: "Easy", core: ["Eggs"], uses: ["Eggs", "Spinach", "Cheddar", "Milk", "Butter"], missing: ["Chives"],
               steps: ["Whisk 3 eggs with a splash of milk, salt and pepper.", "Melt butter in a non-stick pan over medium heat.", "Wilt a handful of spinach, then pour in the eggs.", "When almost set, scatter grated cheddar over one half.", "Fold, slide onto a plate and serve."] },
             { emoji: "🍚", title: "Veggie Fried Rice", time_minutes: 20, difficulty: "Easy", uses: ["Leftover rice", "Carrots", "Eggs", "Spinach", "Butter"], missing: ["Soy sauce", "Spring onions"],
               steps: ["Dice the carrots small.", "Fry carrots in butter for 4 minutes until tender.", "Push to one side, scramble 2 eggs in the space.", "Add the cold rice and stir-fry on high heat for 5 minutes.", "Stir in spinach and soy sauce, top with spring onions."] },
-            { emoji: "🍅", title: "Tomato Egg Scramble", time_minutes: 10, difficulty: "Easy", uses: ["Eggs", "Tomatoes", "Butter"], missing: [],
+            { emoji: "🍅", title: "Tomato Egg Scramble", time_minutes: 10, difficulty: "Easy", core: ["Eggs"], uses: ["Eggs", "Tomatoes", "Butter"], missing: [],
               steps: ["Cut tomatoes into wedges.", "Beat 3 eggs with a pinch of salt.", "Softly scramble the eggs in butter, then set aside.", "Cook tomatoes until juicy, about 3 minutes.", "Fold the eggs back in and serve over rice or toast."] },
           ],
         };
@@ -565,20 +641,23 @@
             if (timeBad()) { fail(TIME_MSG); $("error").scrollIntoView({ block: "center" }); return; }
             const lim = timeLimit();
             state.ingredients = DEMO.ingredients.map((i) => ({ ...i }));
-            state.recipes = DEMO.recipes.filter((r) => lim === null || r.time_minutes <= lim);
+            const timed = DEMO.recipes.filter((r) => lim === null || r.time_minutes <= lim);
+            state.recipes = timed.map(dietRecipe).filter(Boolean);
             render();
-            if (!state.recipes.length) $("recWrap").innerHTML = `<p class="x-empty">No demo recipe fits in ${fmtMin(lim)}. The quickest takes 10 min.</p>`;
+            if (!state.recipes.length) $("recWrap").innerHTML = timed.length
+              ? `<p class="x-empty">No demo recipe is ${esc(diets().join(" + "))}${lim === null ? "" : ` and fits in ${fmtMin(lim)}`}. Add a Gemini key to get recipes that fit.</p>`
+              : `<p class="x-empty">No demo recipe fits in ${fmtMin(lim)}. The quickest takes 10 min.</p>`;
             $("ingredients").scrollIntoView();
           })
         );
 
         // Ask: can I make this dish?
         const BOOK = [
-          { a: ["pancake"], title: "Pancakes", emoji: "🥞", time_minutes: 20, need: ["Flour", "Eggs", "Milk", "Butter", "Sugar", "Baking powder"],
+          { a: ["pancake"], title: "Pancakes", emoji: "🥞", time_minutes: 20, core: ["Eggs"], need: ["Flour", "Eggs", "Milk", "Butter", "Sugar", "Baking powder"],
             steps: ["Whisk 1 cup flour, 1 tbsp sugar, 2 tsp baking powder and a pinch of salt.", "Beat in 1 egg, 1 cup milk and 2 tbsp melted butter until just smooth.", "Heat a buttered pan over medium heat.", "Pour 1/4 cup batter per pancake; flip when bubbles form.", "Cook 1 more minute and serve warm."] },
           { a: ["fried rice"], title: "Fried Rice", emoji: "🍚", time_minutes: 20, need: ["Rice", "Eggs", "Carrots", "Soy sauce", "Spring onions"],
             steps: ["Dice the carrots and slice the spring onions.", "Stir-fry carrots in oil for 4 minutes.", "Push aside and scramble 2 eggs.", "Add cold rice and fry on high heat for 5 minutes.", "Season with soy sauce and top with spring onions."] },
-          { a: ["omelet"], title: "Omelette", emoji: "🍳", time_minutes: 10, need: ["Eggs", "Milk", "Butter", "Cheese|cheddar|mozzarella|parmesan"],
+          { a: ["omelet"], title: "Omelette", emoji: "🍳", time_minutes: 10, core: ["Eggs"], need: ["Eggs", "Milk", "Butter", "Cheese|cheddar|mozzarella|parmesan"],
             steps: ["Whisk 3 eggs with a splash of milk, salt and pepper.", "Melt butter in a pan over medium heat.", "Pour in the eggs and let them set gently.", "Scatter cheese over one half.", "Fold and slide onto a plate."] },
           { a: ["pasta", "spaghetti", "penne"], title: "Tomato Pasta", emoji: "🍝", time_minutes: 25, need: ["Pasta|spaghetti|penne", "Tomatoes", "Garlic", "Cheese|parmesan|cheddar"],
             steps: ["Boil pasta in salted water until al dente.", "Soften sliced garlic in olive oil.", "Add chopped tomatoes and simmer 10 minutes.", "Toss the pasta in the sauce with a splash of pasta water.", "Serve topped with grated cheese."] },
@@ -588,16 +667,28 @@
             steps: ["Wash and dry the greens.", "Chop tomatoes and cucumber.", "Whisk lemon juice or vinegar with oil, salt and pepper.", "Toss everything together just before serving."] },
         ];
         let askRes = null;
-        const haveIt = (need) => need.toLowerCase().split("|").some((k) => state.ingredients.some((i) => i.name.toLowerCase().includes(k)));
+        // Only ingredients that fit every selected diet count; a swapped item also counts when its swap is in the fridge
+        const pool = (ds) => state.ingredients.filter((i) => fits(i.name, ds));
+        const haveIt = (need, ds) => {
+          const base = need.split("|")[0], sw = swapName(base, ds), keys = lc(need).split("|");
+          if (sw !== base) keys.push(lc(sw).split(" ").pop());
+          return pool(ds).some((i) => keys.some((k) => lc(i.name).includes(k)));
+        };
         function demoAsk(dish) {
           const r = BOOK.find((b) => b.a.some((a) => dish.includes(a)));
           if (!r) throw new Error(`No demo recipe for "${dish}". Add a Gemini key above to ask about any dish, or try pancakes, fried rice, omelette, pasta, grilled cheese or salad.`);
-          const name = (n) => n.split("|")[0];
-          const have = r.need.filter(haveIt).map(name), missing = r.need.filter((n) => !haveIt(n)).map(name);
-          return { title: r.title, emoji: r.emoji, can_make: !missing.length, have, missing, steps: r.steps, time_minutes: r.time_minutes, limit: timeLimit() };
+          const ds = active(), label = diets().join(" + ");
+          const block = list(r.core).find((c) => !fits(c, ds));
+          if (block) throw new Error(`The built-in ${lc(r.title)} recipe is built on ${lc(block)}, so it isn't ${label}. Add a Gemini key above for a ${label} version, or try another dish.`);
+          const flagged = state.ingredients.filter((i) => !fits(i.name, ds)).map((i) => i.name);
+          const name = (n) => swapName(n.split("|")[0], ds);
+          const have = r.need.filter((n) => haveIt(n, ds)).map(name), missing = r.need.filter((n) => !haveIt(n, ds)).map(name);
+          const swaps = r.need.map((n) => n.split("|")[0]).filter((b) => !fits(b, ds));
+          const note = [swapNote(swaps, ds), flagged.length ? `Not ${label}, left out: ${flagged.join(", ")}.` : ""].filter(Boolean).join(" ");
+          return { title: r.title, emoji: r.emoji, can_make: !missing.length, have, missing, steps: ds.length ? swapSteps(r.steps, ds) : r.steps, time_minutes: r.time_minutes, limit: timeLimit(), note };
         }
         async function geminiAsk(dish, key) {
-          const text = `The user wants to make: ${dish}. Ingredients available: ${state.ingredients.map((i) => i.name).join(", ")}. Assume salt, pepper, oil and water are available.${timeLimit() === null ? "" : ` The user has at most ${timeLimit()} minutes in total; give a version that fits that time if one exists, and report its real time_minutes.`} Respond with JSON only: {"can_make":true,"have":[""],"missing":[""],"steps":[""],"time_minutes":0}`;
+          const text = `The user wants to make: ${dish}. Ingredients available: ${state.ingredients.map((i) => i.name).join(", ")}. Assume salt, pepper, oil and water are available.${diets().length ? ` ${dietRule("The recipe")} Ingredients that break ${diets().length > 1 ? "any of these diets" : "this diet"} do not count as available.` : ""}${timeLimit() === null ? "" : ` The user has at most ${timeLimit()} minutes in total; give a version that fits that time if one exists, and report its real time_minutes.`} Respond with JSON only: {"can_make":true,"have":[""],"missing":[""],"steps":[""],"time_minutes":0}`;
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contents: [{ parts: [{ text }] }], generationConfig: { responseMimeType: "application/json" } }),
@@ -616,6 +707,7 @@
             <div><h3>${r.can_make ? "You can make it!" : "Almost! You're missing:"}</h3><p class="fineprint">${esc(r.title)}</p></div>
             ${r.time_minutes ? `<p><span class="pill">${esc(r.time_minutes)} min</span></p>` : ""}
             ${r.limit && +r.time_minutes > r.limit ? `<p class="fineprint">Takes longer than your ${esc(fmtMin(r.limit))} limit.</p>` : ""}
+            ${r.note ? `<p class="fineprint">${esc(r.note)}</p>` : ""}
             ${r.can_make ? "" : `<ul class="x-miss">${r.missing.map((m) => `<li>${esc(m)}</li>`).join("")}</ul><div class="x-row"><button class="x-ghost" type="button" data-askcopy>Copy shopping list</button></div>`}
             ${r.have.length ? `<div><p class="x-label">You have</p><ul>${r.have.map((h) => `<li>${esc(h)}</li>`).join("")}</ul></div>` : ""}
             ${r.can_make ? `<div><p class="x-label">Steps</p>${steps}</div><div class="x-row">${cookBtn}</div>` : `<details><summary>Show steps anyway</summary>${steps}<div class="x-row">${cookBtn}</div></details>`}
