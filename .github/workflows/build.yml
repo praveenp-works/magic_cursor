@@ -140,3 +140,11 @@ jobs:
           name: MagicCursor-msix
           path: dist/*.msix
           if-no-files-found: error
+      - name: Attach Store package to store-msix release (not latest)
+        if: ${{ inputs.store_only == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete store-msix --yes --cleanup-tag || true
+          gh release create store-msix dist/*.msix --title "Magic Cursor Store package" --notes "MSIX for Microsoft Store upload only. Download the app from the latest release instead." --latest=false
