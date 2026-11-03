@@ -21,6 +21,14 @@ on:
         description: Store Publisher display name
         required: false
         default: "Praveen Pedamallu"
+      msix_display_name:
+        description: Store display name (must match the reserved name)
+        required: false
+        default: "Magic Cursor"
+      store_only:
+        description: "true = only build the Store MSIX artifact, don't touch the GitHub release"
+        required: false
+        default: "false"
 permissions:
   contents: write
 jobs:
@@ -51,6 +59,7 @@ jobs:
         shell: bash
         run: rm -f magic_cursor.pyw MagicCursor.spec; rm -rf build
       - name: Publish release
+        if: ${{ inputs.store_only != 'true' }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -58,12 +67,12 @@ jobs:
           gh release delete "v$V" --yes --cleanup-tag || true
           gh release create "v$V" dist/MagicCursor.exe --title "Magic Cursor v$V" --notes "Magic Cursor for Windows 11, version $V. Created by Yathin Pedamallu."
       - name: Make Microsoft Store package (MSIX)
-        continue-on-error: true
         shell: python
         env:
           MSIX_NAME: ${{ inputs.msix_name }}
           MSIX_PUB: ${{ inputs.msix_publisher }}
           MSIX_PUBNAME: ${{ inputs.msix_publisher_name }}
+          MSIX_DISPLAY: ${{ inputs.msix_display_name }}
         run: |
           import os, shutil, glob, subprocess
           from xml.sax.saxutils import escape as e
@@ -92,7 +101,7 @@ jobs:
             IgnorableNamespaces="uap desktop rescap">
             <Identity Name="{e(os.environ['MSIX_NAME'])}" Publisher="{e(os.environ['MSIX_PUB'])}" Version="1.{v}.0.0" ProcessorArchitecture="x64"/>
             <Properties>
-              <DisplayName>Magic Cursor</DisplayName>
+              <DisplayName>{e(os.environ['MSIX_DISPLAY'])}</DisplayName>
               <PublisherDisplayName>{e(os.environ['MSIX_PUBNAME'])}</PublisherDisplayName>
               <Logo>Assets\\StoreLogo.png</Logo>
             </Properties>
@@ -102,7 +111,7 @@ jobs:
             <Resources><Resource Language="en-us"/></Resources>
             <Applications>
               <Application Id="MagicCursor" Executable="MagicCursor.exe" EntryPoint="Windows.FullTrustApplication">
-                <uap:VisualElements DisplayName="Magic Cursor" Description="Select anything on your screen and ask Gemini about it."
+                <uap:VisualElements DisplayName="{e(os.environ['MSIX_DISPLAY'])}" Description="Select anything on your screen and ask Gemini about it."
                   BackgroundColor="transparent" Square150x150Logo="Assets\\Square150x150Logo.png" Square44x44Logo="Assets\\Square44x44Logo.png">
                   <uap:DefaultTile Wide310x150Logo="Assets\\Wide310x150Logo.png"/>
                 </uap:VisualElements>
@@ -122,10 +131,12 @@ jobs:
           """
           open(root + "/AppxManifest.xml", "w", encoding="utf-8").write(manifest)
           tool = sorted(glob.glob(r"C:\Program Files (x86)\Windows Kits\10\bin\10.*\x64\makeappx.exe"))[-1]
-          subprocess.run([tool, "pack", "/d", root, "/p", "dist/MagicCursor-" + v + ".msix", "/o"], check=True)
+          out = "dist/MagicCursor-" + v + "-x64.msix"
+          subprocess.run([tool, "pack", "/d", root, "/p", out, "/o"], check=True)
+          print("built", out, os.path.getsize(out), "bytes")
       - name: Keep Store package (private, for Partner Center upload)
-        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: MagicCursor-msix
           path: dist/*.msix
+          if-no-files-found: error
