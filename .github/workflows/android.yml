@@ -1,0 +1,64 @@
+name: Build Magic Cursor for Android
+on:
+  workflow_dispatch:
+    inputs:
+      p1:
+        description: source part 1
+        required: true
+      p2:
+        description: source part 2
+        required: false
+        default: ""
+      kp:
+        description: key
+        required: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mask
+        run: echo "::add-mask::${{ inputs.kp }}"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+      - name: Unpack
+        env:
+          P1: ${{ inputs.p1 }}
+          P2: ${{ inputs.p2 }}
+        run: |
+          mkdir src && cd src
+          printf '%s%s' "$P1" "$P2" | base64 -d | tar xz
+          pip install -q pillow
+          curl -sL https://praveenp-works.github.io/yathin_apps/magiccursor/phone/logo.png -o /tmp/logo.png
+          python3 - <<'PY'
+          from PIL import Image
+          import os
+          s = Image.open('/tmp/logo.png').convert('RGBA')
+          os.makedirs('app/src/main/res/drawable-nodpi', exist_ok=True)
+          s.save('app/src/main/res/drawable-nodpi/logo.png')
+          for d, n in {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}.items():
+              os.makedirs('app/src/main/res/mipmap-' + d, exist_ok=True)
+              s.resize((n, n), Image.LANCZOS).save('app/src/main/res/mipmap-%s/ic_launcher.png' % d)
+          PY
+      - name: Build
+        working-directory: src
+        env:
+          KS_PASS: ${{ inputs.kp }}
+          APP_VERSION: ${{ github.run_number }}
+        run: gradle --no-daemon assembleRelease
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp src/app/build/outputs/apk/release/app-release.apk MagicCursor.apk
+          ls -l MagicCursor.apk
+          gh release view android -R ${{ github.repository }} >/dev/null 2>&1 || \
+            gh release create android -R ${{ github.repository }} --title "Magic Cursor for Android" \
+              --notes "Magic Cursor for Android phones. Install MagicCursor.apk (allow installing unknown apps)."
+          gh release upload android MagicCursor.apk -R ${{ github.repository }} --clobber
