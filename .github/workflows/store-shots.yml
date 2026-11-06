@@ -2,7 +2,7 @@ name: Store screenshots (real app captures)
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   shots:
     runs-on: windows-latest
@@ -58,3 +58,11 @@ jobs:
         with:
           name: store-shots
           path: shots/
+      - name: Publish shots to release
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete store-shots --yes --cleanup-tag || true
+          gh release create store-shots shots/*.png --title "Store screenshots" --notes "Real app captures for Microsoft Store listing." --latest=false
