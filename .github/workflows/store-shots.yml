@@ -1,0 +1,60 @@
+name: Store screenshots (real app captures)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shots:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Screen resolution 1920x1080
+        shell: pwsh
+        run: |
+          try { Set-DisplayResolution -Width 1920 -Height 1080 -Force } catch { Write-Host "resolution: $_" }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyautogui mss pillow pyperclip
+      - name: Get Magic Cursor exe (latest release)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v77 -p MagicCursor.exe -D app
+      - name: Capture
+        shell: python
+        env:
+          GEMINI_API_KEY: AQ.demo-key-for-screenshots-only-000000000000
+        run: |
+          import subprocess, time, os, pyautogui, mss, mss.tools, webbrowser
+          pyautogui.FAILSAFE = False
+          os.makedirs("shots", exist_ok=True)
+          def snap(n):
+              with mss.mss() as m:
+                  mon = m.monitors[1]; img = m.grab(mon)
+                  mss.tools.to_png(img.rgb, img.size, output="shots/%s.png" % n)
+                  print(n, img.size)
+          # something real behind the app: a web page in Edge
+          subprocess.Popen(["cmd", "/c", "start", "msedge", "--start-maximized", "--no-first-run", "https://en.wikipedia.org/wiki/Photosynthesis"])
+          time.sleep(12)
+          subprocess.Popen([os.path.abspath("app/MagicCursor.exe")], env=dict(os.environ))
+          time.sleep(25)
+          snap("0-desktop")
+          pyautogui.hotkey("ctrl", "shift", "space"); time.sleep(4)
+          sw, sh = pyautogui.size(); print("screen", sw, sh)
+          pyautogui.moveTo(sw * 0.45, sh * 0.45); time.sleep(1.5)
+          snap("1-select")
+          pyautogui.moveTo(sw * 0.18, sh * 0.30); pyautogui.mouseDown(); time.sleep(0.3)
+          pyautogui.moveTo(sw * 0.55, sh * 0.62, duration=1.2); time.sleep(0.4); pyautogui.mouseUp()
+          time.sleep(6)
+          snap("2-panel")
+          pyautogui.typewrite("Explain this like I'm 10", interval=0.05); time.sleep(1.5)
+          snap("3-typed")
+          time.sleep(1)
+          pyautogui.press("esc"); time.sleep(2)
+          snap("4-after")
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: store-shots
+          path: shots/
