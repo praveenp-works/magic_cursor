@@ -25,6 +25,10 @@ on:
         description: Store display name (must match the reserved name)
         required: false
         default: "Magic Cursor"
+      msix_rev:
+        description: MSIX build revision (third version number) so a re-upload gets a new version
+        required: false
+        default: "0"
       store_only:
         description: "true = only build the Store MSIX artifact, don't touch the GitHub release"
         required: false
@@ -73,6 +77,7 @@ jobs:
           MSIX_PUB: ${{ inputs.msix_publisher }}
           MSIX_PUBNAME: ${{ inputs.msix_publisher_name }}
           MSIX_DISPLAY: ${{ inputs.msix_display_name }}
+          MSIX_REV: ${{ inputs.msix_rev }}
         run: |
           import os, shutil, glob, subprocess
           from xml.sax.saxutils import escape as e
@@ -99,7 +104,7 @@ jobs:
             xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
             xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
             IgnorableNamespaces="uap desktop rescap">
-            <Identity Name="{e(os.environ['MSIX_NAME'])}" Publisher="{e(os.environ['MSIX_PUB'])}" Version="1.{v}.0.0" ProcessorArchitecture="x64"/>
+            <Identity Name="{e(os.environ['MSIX_NAME'])}" Publisher="{e(os.environ['MSIX_PUB'])}" Version="1.{v}.{os.environ.get('MSIX_REV','0')}.0" ProcessorArchitecture="x64"/>
             <Properties>
               <DisplayName>{e(os.environ['MSIX_DISPLAY'])}</DisplayName>
               <PublisherDisplayName>{e(os.environ['MSIX_PUBNAME'])}</PublisherDisplayName>
